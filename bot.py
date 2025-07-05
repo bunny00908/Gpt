@@ -1,6 +1,6 @@
 import requests
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 # ----- CONFIG -----
 HUGGINGFACE_API_KEY = "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"  # Your Hugging Face API Key
@@ -30,7 +30,7 @@ SYSTEM_PROMPT = (
 # Function to call Hugging Face API
 def query_huggingface_bot(user_input, conversation_history):
     payload = {
-        "inputs": SYSTEM_PROMPT + "\n" + conversation_history + "\n" + user_input
+        "inputs": conversation_history + "\nUser: " + user_input + "\n{GIRL_NAME}:"
     }
     response = requests.post(MODEL_URL, headers=headers, json=payload)
 
@@ -40,13 +40,13 @@ def query_huggingface_bot(user_input, conversation_history):
         return "Sorry, thoda error aa gaya! 🥲"
 
 # Command handler function to start the bot
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start(update: Update, context) -> None:
     await update.message.reply_text(f"Hello, I am {GIRL_NAME}, your virtual girlfriend! Let's chat 💖")
 
 # Function to handle text messages and call the Hugging Face API
-async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def chat(update: Update, context) -> None:
     user_text = update.message.text  # Get the text message from the user
-    
+
     # Check if the user has provided a name
     if user_text.lower().startswith("my name is"):
         user_name[update.message.chat.id] = user_text.split(' ', 3)[-1]  # Save the name
@@ -59,18 +59,18 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         conversation_history = f"User: {user_name[update.message.chat.id]}\n{conversation_history}"
 
     # Get the AI response
-    response = query_huggingface_bot(user_text, conversation_history)  
+    response = query_huggingface_bot(user_text, conversation_history)
     
     # Send the AI response to the user
     await update.message.reply_text(response)  # Send the AI response to the user
 
 if __name__ == '__main__':
     # Create the application with the Telegram bot token
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = Application.builder().token(BOT_TOKEN).build()
 
     # Add the handlers for the bot
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
-    app.add_handler(MessageHandler(filters.COMMAND, start))  # Start command handler
+    app.add_handler(CommandHandler("start", start))  # Start command handler
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))  # Chat handler
     
     # Run the bot
     print(f"💖 {GIRL_NAME} Live AI Girlfriend bot is running—just chat, no commands needed!")
