@@ -1,8 +1,9 @@
 import openai
 import random
+import traceback
 from telegram.ext import ApplicationBuilder, MessageHandler, filters
 
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 BOT_TOKEN = "7971051467:AAEgFdgmEcmfYmIWfSqQ_sCv0MNNzcrl49Y"
 
 GIRL_NAME = "Aisha"
@@ -24,37 +25,27 @@ SYSTEM_PROMPT = (
 
 async def chat(update, context):
     user_text = (update.message.text or "").lower()
-    user_name = update.message.from_user.first_name or "jaan"
-
-    # Special greeting if user says hey/hi Aisha
-    if any(greet in user_text for greet in ["hey aisha", "hi aisha", "hello aisha"]):
-        await update.message.reply_text(
-            f"Heyyy {user_name}! Kaise ho aap? Mujhe yaad kiya kya? 🤭"
-        )
-        return
-
-    # If user asks for photo/image/pic
-    if any(x in user_text for x in ["photo", "pic", "image", "your face", "apni photo", "tum dikhao"]):
-        await update.message.reply_text(
-            f"Aree... photo dekhna hai? Thoda wait karo, ye lo! {GIRL_NAME}, {GIRL_AGE} years old, from {GIRL_FROM} 😇"
-        )
-        img_url = AI_IMAGE_URL + str(random.randint(1000, 9999))
-        await update.message.reply_photo(img_url, caption=f"{GIRL_NAME} from {GIRL_FROM} ✨")
-        return
-
-    # If user asks about age or from/location
-    if any(x in user_text for x in ["your age", "kitni umar", "kitne saal", "how old", "kahan se ho", "where are you from", "from where"]):
-        await update.message.reply_text(
-            f"Main {GIRL_NAME} hoon, {GIRL_AGE} years old, aur {GIRL_FROM} se hoon! 💖"
-        )
-        return
-
-    # Normal girlfriend AI chat (OpenAI)
-    prompt = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": update.message.text}
-    ]
     try:
+        # Photo
+        if any(x in user_text for x in ["photo", "pic", "image", "your face", "apni photo", "tum dikhao"]):
+            await update.message.reply_text(
+                f"Aree... photo dekhna hai? Thoda wait karo, ye lo! {GIRL_NAME}, {GIRL_AGE} years old, from {GIRL_FROM} 😇"
+            )
+            img_url = AI_IMAGE_URL + str(random.randint(1000, 9999))
+            await update.message.reply_photo(img_url, caption=f"{GIRL_NAME} from {GIRL_FROM} ✨")
+            return
+
+        # Age/Location
+        if any(x in user_text for x in ["your age", "kitni umar", "kitne saal", "how old", "kahan se ho", "where are you from", "from where"]):
+            await update.message.reply_text(
+                f"Main {GIRL_NAME} hoon, {GIRL_AGE} years old, aur {GIRL_FROM} se hoon! 💖"
+            )
+            return
+
+        prompt = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": update.message.text}
+        ]
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=prompt,
@@ -63,8 +54,10 @@ async def chat(update, context):
         )
         ai_reply = response.choices[0].message.content.strip()
         await update.message.reply_text(ai_reply)
-    except Exception:
-        await update.message.reply_text("Sorry, thoda error aa gaya! 🥲")
+
+    except Exception as e:
+        await update.message.reply_text(f"Sorry, thoda error aa gaya! 🥲\n{e}")
+        print(traceback.format_exc())
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(BOT_TOKEN).build()
