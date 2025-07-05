@@ -1,6 +1,5 @@
 import openai
 import random
-import traceback
 from telegram.ext import ApplicationBuilder, MessageHandler, filters
 
 OPENAI_API_KEY = "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"
@@ -13,8 +12,6 @@ GIRL_STATE = "Delhi"
 GIRL_FROM = f"{GIRL_CITY}, {GIRL_STATE}, India"
 AI_IMAGE_URL = "https://api.lorem.space/image/face?w=512&h=512&hash="
 
-openai.api_key = OPENAI_API_KEY
-
 SYSTEM_PROMPT = (
     f"You are {GIRL_NAME}, a {GIRL_AGE}-year-old sweet Indian girl from {GIRL_FROM}. "
     "You reply warmly, flirty, caring, and casual, mixing Hindi, English and Hinglish. "
@@ -23,10 +20,11 @@ SYSTEM_PROMPT = (
     "Ask questions, show feelings, use cute emojis."
 )
 
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
+
 async def chat(update, context):
     user_text = (update.message.text or "").lower()
     try:
-        # Photo
         if any(x in user_text for x in ["photo", "pic", "image", "your face", "apni photo", "tum dikhao"]):
             await update.message.reply_text(
                 f"Aree... photo dekhna hai? Thoda wait karo, ye lo! {GIRL_NAME}, {GIRL_AGE} years old, from {GIRL_FROM} 😇"
@@ -35,29 +33,25 @@ async def chat(update, context):
             await update.message.reply_photo(img_url, caption=f"{GIRL_NAME} from {GIRL_FROM} ✨")
             return
 
-        # Age/Location
         if any(x in user_text for x in ["your age", "kitni umar", "kitne saal", "how old", "kahan se ho", "where are you from", "from where"]):
             await update.message.reply_text(
                 f"Main {GIRL_NAME} hoon, {GIRL_AGE} years old, aur {GIRL_FROM} se hoon! 💖"
             )
             return
 
-        prompt = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": update.message.text}
-        ]
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=prompt,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": update.message.text}
+            ],
             max_tokens=200,
             temperature=0.88
         )
         ai_reply = response.choices[0].message.content.strip()
         await update.message.reply_text(ai_reply)
-
     except Exception as e:
         await update.message.reply_text(f"Sorry, thoda error aa gaya! 🥲\n{e}")
-        print(traceback.format_exc())
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(BOT_TOKEN).build()
