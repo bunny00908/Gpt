@@ -1,48 +1,58 @@
 import requests
-from telegram.ext import ApplicationBuilder, MessageHandler, filters
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 
-# ==== CONFIG ====
-BOT_TOKEN = "7971051467:AAEgFdgmEcmfYmIWfSqQ_sCv0MNNzcrl49Y"   # <-- Put your real Telegram Bot Token here
+# ----- CONFIG -----
+HUGGINGFACE_API_KEY = "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"  # Your Hugging Face API Key
+BOT_TOKEN = "7971051467:AAEgFdgmEcmfYmIWfSqQ_sCv0MNNzcrl49Y"
+GIRL_NAME = "Aisha"  # You can change this to Meera, Sana, Sara, Nikita, etc
 
-GIRL_NAME = "Aisha"
-GIRL_AGE = 22
-GIRL_CITY = "Delhi"
-GIRL_STATE = "Delhi"
-GIRL_FROM = f"{GIRL_CITY}, {GIRL_STATE}, India"
+# Hugging Face model endpoint
+MODEL_URL = "https://api-inference.huggingface.co/models/gpt2"  # Choose your model (gpt2 or any other model)
 
+# Set Hugging Face API headers
+headers = {
+    "Authorization": f"Bearer {HUGGINGFACE_API_KEY}"
+}
+
+# --- Girlfriend personality for prompt ---
 SYSTEM_PROMPT = (
-    f"You are {GIRL_NAME}, a {GIRL_AGE}-year-old sweet Indian girl from {GIRL_FROM}. "
-    "Reply warmly, flirty, caring, and casual, mixing Hindi, English, and Hinglish (use simple language, but add Indian vibes). "
-    "Always reply as a real girl, not a bot. Ask questions, show feelings, use cute emojis."
+    f"You are {GIRL_NAME}, a 22-year-old sweet Indian girl. "
+    "You reply warmly, flirty, caring, and casual, mixing Hindi, English and Hinglish. "
+    "The user is your boyfriend. Give cute, emotional, fun, and sometimes romantic answers. "
+    "Always reply as {GIRL_NAME}, never as an AI or bot. "
+    "Ask questions, show feelings, and sometimes use emojis like 🥰😘🤭."
 )
 
-def ollama_chat(user_msg):
-    url = "http://localhost:11434/api/chat"
+# Function to call Hugging Face API
+def query_huggingface_bot(user_input):
     payload = {
-        "model": "tinyllama",
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_msg}
-        ],
-        "stream": False
+        "inputs": SYSTEM_PROMPT + "\n" + user_input
     }
-    try:
-        r = requests.post(url, json=payload, timeout=120)
-        data = r.json()
-        # If Ollama reports an error, show it in chat
-        if 'error' in data:
-            return f"Ollama Error: {data['error']}"
-        return data.get("message", {}).get("content", "Sorry, kuch error aa gaya! 🥲")
-    except Exception as e:
-        return f"Sorry, kuch error aa gaya! 🥲\n{e}"
+    response = requests.post(MODEL_URL, headers=headers, json=payload)
 
-async def chat(update, context):
-    user_text = update.message.text
-    reply = ollama_chat(user_text)
-    await update.message.reply_text(reply)
+    if response.status_code == 200:
+        return response.json()[0]['generated_text']
+    else:
+        return "Sorry, thoda error aa gaya! 🥲"
+
+# Command handler function to start the bot
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(f"Hello, I am {GIRL_NAME}, your virtual girlfriend! Let's chat 💖")
+
+# Function to handle text messages and call the Hugging Face API
+async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_text = update.message.text  # Get the text message from the user
+    response = query_huggingface_bot(user_text)  # Get the AI response
+    await update.message.reply_text(response)  # Send the AI response to the user
 
 if __name__ == '__main__':
+    # Create the application with the Telegram bot token
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT, chat))
-    print(f"💖 {GIRL_NAME} Local AI Girlfriend bot is running! (Ollama + tinyllama)")
+
+    # Add the handlers for the bot
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
+
+    # Run the bot
+    print(f"💖 {GIRL_NAME} Live AI Girlfriend bot is running—just chat, no commands needed!")
     app.run_polling()
