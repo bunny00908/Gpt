@@ -2,7 +2,7 @@ import requests
 from telegram.ext import ApplicationBuilder, MessageHandler, filters
 
 # ==== CONFIG ====
-BOT_TOKEN = "7971051467:AAEgFdgmEcmfYmIWfSqQ_sCv0MNNzcrl49Y"
+BOT_TOKEN = "7971051467:AAEgFdgmEcmfYmIWfSqQ_sCv0MNNzcrl49Y"   # <-- Put your real Telegram Bot Token here
 
 GIRL_NAME = "Aisha"
 GIRL_AGE = 22
@@ -19,7 +19,7 @@ SYSTEM_PROMPT = (
 def ollama_chat(user_msg):
     url = "http://localhost:11434/api/chat"
     payload = {
-        "model": "llama3",
+        "model": "phi",
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_msg}
@@ -29,7 +29,7 @@ def ollama_chat(user_msg):
     try:
         r = requests.post(url, json=payload, timeout=120)
         data = r.json()
-        # Show error details if Ollama gives one
+        # If Ollama reports an error (e.g. model not loaded), show it
         if 'error' in data:
             return f"Ollama Error: {data['error']}"
         return data.get("message", {}).get("content", "Sorry, kuch error aa gaya! 🥲")
@@ -44,5 +44,5 @@ async def chat(update, context):
 if __name__ == '__main__':
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(MessageHandler(filters.TEXT, chat))
-    print(f"💖 {GIRL_NAME} Local AI Girlfriend bot is running! (Ollama + llama3)")
+    print(f"💖 {GIRL_NAME} Local AI Girlfriend bot is running! (Ollama + phi)")
     app.run_polling()
