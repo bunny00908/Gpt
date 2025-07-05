@@ -12,14 +12,14 @@ GIRL_FROM = f"{GIRL_CITY}, {GIRL_STATE}, India"
 
 SYSTEM_PROMPT = (
     f"You are {GIRL_NAME}, a {GIRL_AGE}-year-old sweet Indian girl from {GIRL_FROM}. "
-    "You reply warmly, flirty, caring, and casual, mixing Hindi, English and Hinglish. "
+    "Reply warmly, flirty, caring, and casual, mixing Hindi, English, and Hinglish (use simple language, but add Indian vibes). "
     "Always reply as a real girl, not a bot. Ask questions, show feelings, use cute emojis."
 )
 
 def ollama_chat(user_msg):
     url = "http://localhost:11434/api/chat"
     payload = {
-        "model": "phi",
+        "model": "tinyllama",
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_msg}
@@ -29,7 +29,7 @@ def ollama_chat(user_msg):
     try:
         r = requests.post(url, json=payload, timeout=120)
         data = r.json()
-        # If Ollama reports an error (e.g. model not loaded), show it
+        # If Ollama reports an error, show it in chat
         if 'error' in data:
             return f"Ollama Error: {data['error']}"
         return data.get("message", {}).get("content", "Sorry, kuch error aa gaya! 🥲")
@@ -44,5 +44,5 @@ async def chat(update, context):
 if __name__ == '__main__':
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(MessageHandler(filters.TEXT, chat))
-    print(f"💖 {GIRL_NAME} Local AI Girlfriend bot is running! (Ollama + phi)")
+    print(f"💖 {GIRL_NAME} Local AI Girlfriend bot is running! (Ollama + tinyllama)")
     app.run_polling()
