@@ -2,6 +2,7 @@ import openai
 import random
 from telegram.ext import ApplicationBuilder, MessageHandler, filters
 
+# === CONFIG ===
 OPENAI_API_KEY = "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"
 BOT_TOKEN = "7971051467:AAEgFdgmEcmfYmIWfSqQ_sCv0MNNzcrl49Y"
 
@@ -20,11 +21,13 @@ SYSTEM_PROMPT = (
     "Ask questions, show feelings, use cute emojis."
 )
 
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
+# --- Initialize OpenAI Client (NEW v1.x style) ---
+client = openai.Client(api_key=OPENAI_API_KEY)
 
 async def chat(update, context):
     user_text = (update.message.text or "").lower()
     try:
+        # Photo/image reply
         if any(x in user_text for x in ["photo", "pic", "image", "your face", "apni photo", "tum dikhao"]):
             await update.message.reply_text(
                 f"Aree... photo dekhna hai? Thoda wait karo, ye lo! {GIRL_NAME}, {GIRL_AGE} years old, from {GIRL_FROM} 😇"
@@ -33,12 +36,14 @@ async def chat(update, context):
             await update.message.reply_photo(img_url, caption=f"{GIRL_NAME} from {GIRL_FROM} ✨")
             return
 
+        # Age/location reply
         if any(x in user_text for x in ["your age", "kitni umar", "kitne saal", "how old", "kahan se ho", "where are you from", "from where"]):
             await update.message.reply_text(
                 f"Main {GIRL_NAME} hoon, {GIRL_AGE} years old, aur {GIRL_FROM} se hoon! 💖"
             )
             return
 
+        # Normal AI girlfriend chat
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
